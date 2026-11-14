@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediksi Putus Sekolah per Provinsi</title>
+<meta name="description" content="Prediksi tingkat putus sekolah per provinsi dengan Random Forest (TA-06 Pembelajaran Mesin).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-state="rendah">
+
+<header class="hero">
+  <div class="hero-teks">
+    <h1>Prediksi tingkat putus sekolah per provinsi</h1>
+    <p>Atur kondisi pendidikan sebuah provinsi, lalu lihat 10 pohon keputusan memberi suara. Suasana sekolah di bawah ikut berubah sesuai hasilnya.</p>
+    <nav class="nav" aria-label="Navigasi halaman">
+      <a href="#prediksi">Prediksi</a>
+      <a href="#model">Tentang model</a>
+    </nav>
+  </div>
+
+  <svg id="adegan" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMax slice" role="img" aria-labelledby="adeganJudul adeganDesk">
+    <title id="adeganJudul">Ilustrasi suasana sekolah</title>
+    <desc id="adeganDesk">Gedung sekolah dengan bendera, lapangan rumput, dan anak-anak berseragam merah putih. Suasana cerah dengan banyak siswa di sekolah untuk hasil Rendah, dan mendung dengan beberapa siswa meninggalkan sekolah untuk hasil Tinggi.</desc>
+    <defs>
+      <linearGradient id="langit" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#86C8EE"/><stop offset="1" stop-color="#E4F4FB"/>
+      </linearGradient>
+      <pattern id="pagar" width="16" height="32" patternUnits="userSpaceOnUse">
+        <rect x="3" y="0" width="9" height="32" rx="2" fill="#F4EFE2"/>
+      </pattern>
+
+      <g id="awanbentuk">
+        <ellipse cx="0" cy="0" rx="50" ry="17"/>
+        <circle cx="-20" cy="-13" r="19"/>
+        <circle cx="10" cy="-20" r="24"/>
+        <circle cx="35" cy="-7" r="15"/>
+      </g>
+
+      <!-- Anak: titik asal (0,0) ada di telapak kaki. Warna dan ayunan diatur lewat variabel CSS pada elemen <use>. -->
+      <g id="anak">
+        <rect x="-14" y="-43" width="9" height="19" rx="3" fill="var(--tas, none)"/>
+        <g class="kaki k1"><rect x="-7" y="-20" width="6" height="20" rx="2.5" fill="var(--kulit)"/><rect x="-8" y="-5" width="9" height="5" rx="2.5" fill="#2B2B3A"/></g>
+        <g class="kaki k2"><rect x="1" y="-20" width="6" height="20" rx="2.5" fill="var(--kulit)"/><rect x="0" y="-5" width="9" height="5" rx="2.5" fill="#2B2B3A"/></g>
+        <path d="M-10.5 -17 h21 v-11 h-21z" fill="var(--bawah)"/>
+        <rect x="-10" y="-45" width="20" height="23" rx="5" fill="var(--atas)" stroke="#D5DAE0" stroke-width=".6"/>
+        <g class="lengan l1"><rect x="-16" y="-43" width="6" height="17" rx="3" fill="var(--atas)" stroke="#D5DAE0" stroke-width=".6"/><circle cx="-13" cy="-25" r="3" fill="var(--kulit)"/></g>
+        <g class="lengan l2"><rect x="10" y="-43" width="6" height="17" rx="3" fill="var(--atas)" stroke="#D5DAE0" stroke-width=".6"/><circle cx="13" cy="-25" r="3" fill="var(--kulit)"/></g>
+        <circle cx="0" cy="-55" r="9.5" fill="var(--kulit)"/>
+        <path d="M-10 -56 a10 10 0 0 1 20 0 q-4.5 -4.5 -10 -4.5 t-10 4.5z" fill="var(--rambut)"/>
+        <circle cx="-3.4" cy="-54" r="1.1" fill="#222"/><circle cx="3.4" cy="-54" r="1.1" fill="#222"/>
+        <path d="M-3.2 -50.5 q3.2 3.2 6.4 0" stroke="#222" fill="none" stroke-width="1.1" stroke-linecap="round"/>
+      </g>
+    </defs>
+
+    <!-- Langit, matahari, awan -->
+    <rect width="1200" height="460" fill="url(#langit)"/>
+    <rect class="mendung" width="1200" height="460" fill="#4A5A70"/>
+    <g class="matahari" transform="translate(1120 84)">
+      <g class="sinar">
+        <g stroke="#FFD45E" stroke-width="5" stroke-linecap="round">
+          <line x1="0" y1="-58" x2="0" y2="-72"/><line x1="0" y1="58" x2="0" y2="72"/>
+          <line x1="-58" y1="0" x2="-72" y2="0"/><line x1="58" y1="0" x2="72" y2="0"/>
+          <line x1="41" y1="-41" x2="51" y2="-51"/><line x1="-41" y1="41" x2="-51" y2="51"/>
+          <line x1="41" y1="41" x2="51" y2="51"/><line x1="-41" y1="-41" x2="-51" y2="-51"/>
+        </g>
+      </g>
+      <circle r="40" fill="#FFD45E"/>
+    </g>
+    <g class="lintas-awan" style="--dur:90s;--tunda:-30s"><g transform="translate(0 78) scale(1.15)"><use href="#awanbentuk" class="awan"/></g></g>
+    <g class="lintas-awan" style="--dur:120s;--tunda:-85s"><g transform="translate(0 150) scale(.8)"><use href="#awanbentuk" class="awan"/></g></g>
+    <g class="lintas-awan" style="--dur:100s;--tunda:-60s"><g transform="translate(0 52) scale(.9)"><use href="#awanbentuk" class="awan"/></g></g>
+
+    <!-- Bukit dan tanah -->
+    <path d="M0 330 C150 268 300 290 450 318 S700 278 850 298 S1100 268 1200 298 V345 H0Z" fill="#A8D5A0"/>
+    <path d="M0 348 C200 312 380 338 560 338 S900 302 1200 332 V360 H0Z" fill="#93C98A"/>
+    <rect y="336" width="1200" height="124" fill="#6DB36F"/>
+    <g fill="#ffffff" opacity=".06"><rect x="0" y="336" width="100" height="124"/><rect x="200" y="336" width="100" height="124"/><rect x="400" y="336" width="100" height="124"/><rect x="600" y="336" width="100" height="124"/><rect x="800" y="336" width="100" height="124"/><rect x="1000" y="336" width="100" height="124"/></g>
+    <ellipse cx="300" cy="404" rx="150" ry="26" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/>
+    <rect y="440" width="1200" height="20" fill="#D6CFC0"/>
+    <rect y="438" width="1200" height="3" fill="#BFB7A5"/>
+
+    <!-- Pagar -->
+    <rect x="0" y="306" width="538" height="32" fill="url(#pagar)"/><rect x="0" y="314" width="538" height="4" fill="#E7DFC9"/>
+    <rect x="1092" y="306" width="108" height="32" fill="url(#pagar)"/><rect x="1092" y="314" width="108" height="4" fill="#E7DFC9"/>
+
+    <!-- Pohon -->
+    <g transform="translate(505 340) scale(.62)"><g class="pohon">
+      <rect x="-7" y="-62" width="14" height="62" fill="#8A5A35"/>
+      <circle cx="0" cy="-96" r="46" fill="#4FA55E"/><circle cx="-32" cy="-72" r="31" fill="#3F8F4F"/><circle cx="34" cy="-74" r="31" fill="#3F8F4F"/>
+    </g></g>
+    <g transform="translate(1150 340)"><g class="pohon p2">
+      <rect x="-7" y="-62" width="14" height="62" fill="#8A5A35"/>
+      <circle cx="0" cy="-96" r="46" fill="#4FA55E"/><circle cx="-32" cy="-72" r="31" fill="#3F8F4F"/><circle cx="34" cy="-74" r="31" fill="#3F8F4F"/>
+    </g></g>
+
+    <!-- Bendera -->
+    <rect x="546" y="148" width="5" height="192" fill="#7B8794"/>
+    <circle cx="548.5" cy="146" r="5" fill="#E0B43A"/>
+    <g transform="translate(551 154)"><g class="bendera">
+      <rect width="68" height="23" fill="#D12E2E"/><rect y="23" width="68" height="23" fill="#fff" stroke="#D5DAE0"/>
+    </g></g>
+
+    <!-- Sekolah -->
+    <g class="sekolah">
+      <rect x="590" y="214" width="490" height="126" fill="#F3EAD3"/>
+      <rect x="590" y="324" width="490" height="16" fill="#D9CDB0"/>
+      <polygon points="745,172 935,172 840,106" fill="#B8322A"/>
+      <polygon points="575,222 1095,222 1055,172 615,172" fill="#B8322A"/>
+      <rect x="575" y="218" width="520" height="8" fill="#8F2620"/>
+      <circle cx="840" cy="150" r="18" fill="#fff" stroke="#8F2620" stroke-width="3"/>
+      <line class="jam-menit" x1="840" y1="150" x2="840" y2="138" stroke="#14213D" stroke-width="2" stroke-linecap="round"/>
+      <line class="jam-jam" x1="840" y1="150" x2="847" y2="150" stroke="#14213D" stroke-width="2.6" stroke-linecap="round"/>
+      <g class="jendela">
+        <rect x="630" y="244" width="62" height="48" rx="3" fill="#BFE3F5" stroke="#8A7B5B" stroke-width="3"/><line x1="661" y1="244" x2="661" y2="292" stroke="#8A7B5B" stroke-width="2"/><line x1="630" y1="268" x2="692" y2="268" stroke="#8A7B5B" stroke-width="2"/>
+        <rect x="712" y="244" width="62" height="48" rx="3" fill="#BFE3F5" stroke="#8A7B5B" stroke-width="3"/><line x1="743" y1="244" x2="743" y2="292" stroke="#8A7B5B" stroke-width="2"/><line x1="712" y1="268" x2="774" y2="268" stroke="#8A7B5B" stroke-width="2"/>
+        <rect x="906" y="244" width="62" height="48" rx="3" fill="#BFE3F5" stroke="#8A7B5B" stroke-width="3"/><line x1="937" y1="244" x2="937" y2="292" stroke="#8A7B5B" stroke-width="2"/><line x1="906" y1="268" x2="968" y2="268" stroke="#8A7B5B" stroke-width="2"/>
+        <rect x="988" y="244" width="62" height="48" rx="3" fill="#BFE3F5" stroke="#8A7B5B" stroke-width="3"/><line x1="1019" y1="244" x2="1019" y2="292" stroke="#8A7B5B" stroke-width="2"/><line x1="988" y1="268" x2="1050" y2="268" stroke="#8A7B5B" stroke-width="2"/>
+      </g>
+      <rect x="782" y="228" width="116" height="26" rx="4" fill="#1D4E89"/>
+      <text x="840" y="246.5" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="'Plus Jakarta Sans','Segoe UI',sans-serif" letter-spacing="1">SEKOLAH</text>
+      <rect x="808" y="264" width="64" height="76" rx="6" fill="#7A4B2A"/>
+      <line x1="840" y1="266" x2="840" y2="340" stroke="#5A3519" stroke-width="2"/>
+      <circle cx="834" cy="304" r="2.4" fill="#E0B43A"/><circle cx="846" cy="304" r="2.4" fill="#E0B43A"/>
+      <rect x="794" y="340" width="92" height="8" fill="#CFC6B0"/>
+    </g>
+
+    <!-- Anak-anak yang selalu ada di lapangan -->
+    <g class="grp grp-tetap">
+      <g transform="translate(110 428)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="lompat" style="--tunda:0s"><use href="#anak" style="--kulit:#F0C29B;--rambut:#1E1B1A;--atas:#fff;--bawah:#D12E2E"/></g></g>
+      <g transform="translate(205 412)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="goyang"><use href="#anak" style="--kulit:#C98F5E;--rambut:#2A1D16;--atas:#fff;--bawah:#D12E2E"/></g></g>
+      <g transform="translate(298 432)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="goyang" style="--tunda:-1s"><use href="#anak" style="--kulit:#E3B08A;--rambut:#3B2A20;--atas:#fff;--bawah:#2F5FA8"/></g></g>
+      <g transform="translate(352 438)"><ellipse rx="9" ry="3" fill="#000" opacity=".16"/><g class="bola"><circle cy="-9" r="9" fill="#fff" stroke="#2B2B3A" stroke-width="1.6"/><path d="M0 -14 l4 3 -1.5 5 h-5 l-1.5 -5z" fill="#2B2B3A"/></g></g>
+      <g transform="translate(398 420)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="lompat" style="--tunda:-.7s"><use href="#anak" style="--kulit:#B87A4B;--rambut:#1E1B1A;--atas:#fff;--bawah:#D12E2E"/></g></g>
+      <g transform="translate(690 426)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="goyang" style="--tunda:-2s"><use href="#anak" style="--kulit:#F0C29B;--rambut:#3B2A20;--atas:#fff;--bawah:#D12E2E"/></g></g>
+      <g transform="translate(1010 436)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="lompat" style="--tunda:-1.2s"><use href="#anak" style="--kulit:#D9A273;--rambut:#1E1B1A;--atas:#fff;--bawah:#2F5FA8"/></g></g>
+    </g>
+
+    <!-- Hasil Rendah: lebih banyak siswa datang dan bertahan di sekolah -->
+    <g class="grp grp-rendah">
+      <g transform="translate(776 372) scale(.82)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="goyang"><use href="#anak" style="--kulit:#E3B08A;--rambut:#1E1B1A;--atas:#fff;--bawah:#D12E2E"/></g></g>
+      <g transform="translate(906 374) scale(.82)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="lompat" style="--tunda:-.4s"><use href="#anak" style="--kulit:#C98F5E;--rambut:#2A1D16;--atas:#fff;--bawah:#D12E2E"/></g></g>
+      <g transform="translate(560 392) scale(.9)"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><g class="lompat" style="--tunda:-1.5s"><use href="#anak" style="--kulit:#F0C29B;--rambut:#3B2A20;--atas:#fff;--bawah:#2F5FA8"/></g></g>
+      <g transform="translate(40 450)"><g class="lintas" style="--jarak:740px;--dur:17s;--tunda:-4s"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><use href="#anak" style="--kulit:#E3B08A;--rambut:#1E1B1A;--atas:#fff;--bawah:#D12E2E;--ayun:26deg;--ayunl:22deg;--dur:.6s;--tas:#E4A93C"/></g></g>
+      <g transform="translate(20 452)"><g class="lintas" style="--jarak:760px;--dur:21s;--tunda:-13s"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><use href="#anak" style="--kulit:#B87A4B;--rambut:#1E1B1A;--atas:#fff;--bawah:#2F5FA8;--ayun:24deg;--ayunl:20deg;--dur:.66s;--tas:#3B7DD8"/></g></g>
+    </g>
+
+    <!-- Hasil Tinggi: beberapa siswa berjalan meninggalkan sekolah -->
+    <g class="grp grp-pergi">
+      <g transform="translate(780 452)"><g class="lintas" style="--jarak:520px;--dur:18s;--tunda:-2s"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><use href="#anak" style="--kulit:#E3B08A;--rambut:#1E1B1A;--atas:#fff;--bawah:#D12E2E;--ayun:24deg;--ayunl:20deg;--dur:.7s;--tas:#E4A93C"/></g></g>
+      <g transform="translate(800 454)"><g class="lintas" style="--jarak:500px;--dur:23s;--tunda:-9s"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><use href="#anak" style="--kulit:#C98F5E;--rambut:#2A1D16;--atas:#fff;--bawah:#2F5FA8;--ayun:22deg;--ayunl:18deg;--dur:.78s;--tas:#3B7DD8"/></g></g>
+      <g transform="translate(760 450)"><g class="lintas" style="--jarak:540px;--dur:27s;--tunda:-17s"><ellipse rx="15" ry="4" fill="#000" opacity=".14"/><use href="#anak" style="--kulit:#F0C29B;--rambut:#3B2A20;--atas:#fff;--bawah:#D12E2E;--ayun:20deg;--ayunl:16deg;--dur:.85s;--tas:#C0392B"/></g></g>
+    </g>
+  </svg>
+  <p class="adegan-ket" id="adeganKet">Ilustrasi suasana. Bukan data nyata.</p>
+</header>
+
+<main>
+  <section id="prediksi" class="susunan">
+    <div class="kolom-input">
+      <div class="preset" role="group" aria-label="Contoh pengisian">
+        <span class="preset-judul">Coba contoh</span>
+        <button type="button" data-preset="median">Nilai tipikal</button>
+        <button type="button" data-preset="Rendah">Profil provinsi Rendah</button>
+        <button type="button" data-preset="Tinggi">Profil provinsi Tinggi</button>
+      </div>
+      <div id="kelompok"></div>
+    </div>
+
+    <aside class="hasil" aria-live="polite" aria-label="Hasil prediksi">
+      <div class="kartu">
+        <div class="kepala">
+          <div>
+            <p class="kecil">Prediksi tingkat putus sekolah</p>
+            <p class="besar" id="label">Rendah</p>
+          </div>
+          <svg class="cincin" viewBox="0 0 100 100" width="104" height="104" role="img" aria-label="Peluang hasil prediksi">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#E8ECF1" stroke-width="10"/>
+            <circle id="cincinIsi" cx="50" cy="50" r="40" fill="none" stroke="#1F7A5C" stroke-width="10" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+            <text id="cincinTeks" x="50" y="57" text-anchor="middle" font-size="21" font-weight="800">0%</text>
+          </svg>
+        </div>
+        <p class="teks" id="ringkas"></p>
+        <div id="bar-peluang"></div>
+        <h2 class="judul-kecil">Suara tiap pohon</h2>
+        <div class="pohon-suara" id="suara" aria-hidden="true"></div>
+        <p class="catatan">Dilatih dari data 38 provinsi untuk keperluan pembelajaran. Lihat bagian Tentang model untuk akurasi dan keterbatasannya.</p>
+      </div>
+    </aside>
+  </section>
+
+  <section id="model" class="model">
+    <h2 class="judul-bagian">Tentang model</h2>
+    <div class="kisi-model">
+      <div class="kartu teks-panjang" id="infoModel"></div>
+      <div class="kartu">
+        <h3 class="judul-kecil" style="margin-top:0">Fitur yang paling berpengaruh</h3>
+        <p class="catatan" style="margin-top:.2rem">Lima fitur dengan skor kepentingan tertinggi. Berlaku untuk model secara keseluruhan, bukan untuk satu input.</p>
+        <div id="fiturPenting"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="kaki-halaman">
+  <p>Syifa Kanita Putri G</p>
+  <p>NIM 301240016</p>
+  <p>Tugas Akhir 06, Pembelajaran Mesin: Random Forest</p>
+</footer>
+
+<script src="model.js"></script>
+<script src="rf.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
